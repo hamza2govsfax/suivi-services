@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تسجيل الدخول — منظومة متابعة أنشطة دوائر ولاية صفاقس</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0A66C2; --blue-dark:#004182; --ink:#1D2226; --ink-soft:rgba(29,34,38,.65);
+    --border:rgba(0,0,0,.09); --panel:#FFFFFF; --bg:#F4F2EE; --red:#CC1016;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:var(--bg); font-family:'Cairo', sans-serif; color:var(--ink); padding:20px;
+  }
+  .card{
+    width:100%; max-width:400px; background:var(--panel); border:1px solid var(--border);
+    border-radius:16px; padding:32px 28px; box-shadow:0 0 0 1px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.12);
+    animation:pop .35s cubic-bezier(.22,.8,.2,1) both;
+  }
+  @keyframes pop{ from{opacity:0; transform:translateY(14px) scale(.98);} to{opacity:1; transform:none;} }
+  .card h1{ font-size:18px; margin:0 0 4px; text-align:center; }
+  .card p.sub{ margin:0 0 24px; text-align:center; color:var(--ink-soft); font-size:13.5px; }
+  label{ display:block; font-size:13px; font-weight:700; margin-bottom:6px; }
+  .field{ margin-bottom:16px; }
+  input{
+    width:100%; padding:11px 13px; border-radius:10px; border:1.5px solid var(--border);
+    font-family:inherit; font-size:15px; font-weight:600; color:var(--ink); background:#fff;
+  }
+  input:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(10,102,194,.18); }
+  button{
+    width:100%; padding:12px; border:none; border-radius:10px; background:linear-gradient(120deg,var(--blue),var(--blue-dark));
+    color:#fff; font-family:inherit; font-weight:800; font-size:15px; cursor:pointer; margin-top:6px;
+    transition:filter .15s ease;
+  }
+  button:hover{ filter:brightness(1.08); }
+  button:disabled{ opacity:.6; cursor:default; }
+  .error{ color:var(--red); font-size:13px; font-weight:700; margin-top:12px; text-align:center; display:none; }
+</style>
+</head>
+<body>
+  <form class="card" id="loginForm" autocomplete="on">
+    <h1>تسجيل الدخول</h1>
+    <p class="sub">منظومة متابعة أنشطة دوائر ولاية صفاقس</p>
+    <div class="field">
+      <label for="username">اسم المستخدم</label>
+      <input type="text" id="username" name="username" required autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="password">كلمة المرور</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password">
+    </div>
+    <button type="submit" id="submitBtn">دخول</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+
+<script>
+  // عدّل هذا العنوان إن لزم ليطابق ما وضعته في index.html
+  const API_BASE_URL = window.API_BASE_URL || "http://localhost:4000/api";
+
+  // إن كان هناك جلسة صالحة مسبقًا، انتقل مباشرة إلى التطبيق
+  if (localStorage.getItem("sfax_token")) {
+    window.location.href = "index.html";
+  }
+
+  const form = document.getElementById("loginForm");
+  const errorMsg = document.getElementById("errorMsg");
+  const submitBtn = document.getElementById("submitBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.style.display = "none";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "جارٍ التحقق...";
+    try {
+      const res = await fetch(API_BASE_URL + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: document.getElementById("username").value.trim(),
+          password: document.getElementById("password").value,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "بيانات الدخول غير صحيحة");
+      localStorage.setItem("sfax_token", data.token);
+      localStorage.setItem("sfax_user", JSON.stringify(data.user || {}));
+      window.location.href = "index.html";
+    } catch (err) {
+      errorMsg.textContent = err.message || "تعذر تسجيل الدخول";
+      errorMsg.style.display = "block";
+      submitBtn.disabled = false;
+      submitBtn.textContent = "دخول";
+    }
+  });
+</script>
+</body>
+</html>
